@@ -1,5 +1,6 @@
 import pandas as pd
-
+import os
+from joblib import dump
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import numpy as np
@@ -881,180 +882,196 @@ def main():
     y_pred_ens = (proba_ens >= 0.5).astype(int)
     evaluate_model("Ensemble (prob-average, 0.5 cutoff)", y_test, y_pred_ens)
 
-        # === Transformer (sequence model, 30-day window) ===
-    try:
-        import torch
-        import torch.nn as nn
-        import torch.optim as optim
-        from torch.utils.data import TensorDataset, DataLoader
-        HAS_TORCH = True
-    except ImportError:
-        HAS_TORCH = False
+    #     # === Transformer (sequence model, 30-day window) ===
+    # try:
+    #     import torch
+    #     import torch.nn as nn
+    #     import torch.optim as optim
+    #     from torch.utils.data import TensorDataset, DataLoader
+    #     HAS_TORCH = True
+    # except ImportError:
+    #     HAS_TORCH = False
 
-    if HAS_TORCH:
-        print("\n=== Transformer Hyperparameter Tuning (by P&L) ===")
+    # if HAS_TORCH:
+    #     print("\n=== Transformer Hyperparameter Tuning (by P&L) ===")
 
-        # 1) Scale features for the Transformer
-        scaler_tf = StandardScaler()
-        X_all_scaled = scaler_tf.fit_transform(X)
-        X_all_scaled = pd.DataFrame(X_all_scaled, index=X.index, columns=X.columns)
+    #     # 1) Scale features for the Transformer
+    #     scaler_tf = StandardScaler()
+    #     X_all_scaled = scaler_tf.fit_transform(X)
+    #     X_all_scaled = pd.DataFrame(X_all_scaled, index=X.index, columns=X.columns)
 
-        # 2) Build 30-day sequence dataset
-        X_seq, y_seq, ret_seq = build_sequence_dataset(
-            X_all_scaled, y, future_ret, seq_len=SEQ_LEN
-        )
+    #     # 2) Build 30-day sequence dataset
+    #     X_seq, y_seq, ret_seq = build_sequence_dataset(
+    #         X_all_scaled, y, future_ret, seq_len=SEQ_LEN
+    #     )
 
-        n_seq = len(X_seq)
-        split_idx_seq = int(n_seq * 0.8)
+    #     n_seq = len(X_seq)
+    #     split_idx_seq = int(n_seq * 0.8)
 
-        X_train_seq = X_seq[:split_idx_seq]
-        X_test_seq  = X_seq[split_idx_seq:]
-        y_train_seq = y_seq[:split_idx_seq]
-        y_test_seq  = y_seq[split_idx_seq:]
-        ret_test_seq = ret_seq[split_idx_seq:]
+    #     X_train_seq = X_seq[:split_idx_seq]
+    #     X_test_seq  = X_seq[split_idx_seq:]
+    #     y_train_seq = y_seq[:split_idx_seq]
+    #     y_test_seq  = y_seq[split_idx_seq:]
+    #     ret_test_seq = ret_seq[split_idx_seq:]
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        X_train_t = torch.tensor(X_train_seq, dtype=torch.float32).to(device)
-        y_train_t = torch.tensor(y_train_seq, dtype=torch.float32).float().to(device)
-        X_test_t  = torch.tensor(X_test_seq,  dtype=torch.float32).to(device)
-        y_test_t  = torch.tensor(y_test_seq,  dtype=torch.float32).float().to(device)
+    #     X_train_t = torch.tensor(X_train_seq, dtype=torch.float32).to(device)
+    #     y_train_t = torch.tensor(y_train_seq, dtype=torch.float32).float().to(device)
+    #     X_test_t  = torch.tensor(X_test_seq,  dtype=torch.float32).to(device)
+    #     y_test_t  = torch.tensor(y_test_seq,  dtype=torch.float32).float().to(device)
 
-        num_features = X_seq.shape[-1]
+    #     num_features = X_seq.shape[-1]
 
-        class SimpleTransformerClassifier(nn.Module):
-            def __init__(self, num_features, d_model=64, num_layers=2,
-                         nhead=4, dim_feedforward=128, dropout=0.1):
-                super().__init__()
-                self.input_proj = nn.Linear(num_features, d_model)
-                encoder_layer = nn.TransformerEncoderLayer(
-                    d_model=d_model,
-                    nhead=nhead,
-                    dim_feedforward=dim_feedforward,
-                    dropout=dropout,
-                    batch_first=True,
-                )
-                self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-                self.cls_head = nn.Linear(d_model, 1)
+    #     class SimpleTransformerClassifier(nn.Module):
+    #         def __init__(self, num_features, d_model=64, num_layers=2,
+    #                      nhead=4, dim_feedforward=128, dropout=0.1):
+    #             super().__init__()
+    #             self.input_proj = nn.Linear(num_features, d_model)
+    #             encoder_layer = nn.TransformerEncoderLayer(
+    #                 d_model=d_model,
+    #                 nhead=nhead,
+    #                 dim_feedforward=dim_feedforward,
+    #                 dropout=dropout,
+    #                 batch_first=True,
+    #             )
+    #             self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+    #             self.cls_head = nn.Linear(d_model, 1)
 
-            def forward(self, x):
-                # x: (batch, seq_len, num_features)
-                x = self.input_proj(x)      # (batch, seq_len, d_model)
-                x = self.encoder(x)         # (batch, seq_len, d_model)
-                x = x[:, -1, :]             # use last time step as summary
-                logits = self.cls_head(x).squeeze(-1)  # (batch,)
-                return logits
+    #         def forward(self, x):
+    #             # x: (batch, seq_len, num_features)
+    #             x = self.input_proj(x)      # (batch, seq_len, d_model)
+    #             x = self.encoder(x)         # (batch, seq_len, d_model)
+    #             x = x[:, -1, :]             # use last time step as summary
+    #             logits = self.cls_head(x).squeeze(-1)  # (batch,)
+    #             return logits
 
-        def train_one_transformer(model, lr=1e-3, epochs=10, batch_size=64):
-            model.to(device)
-            criterion = nn.BCEWithLogitsLoss()
-            optimizer = optim.Adam(model.parameters(), lr=lr)
+    #     def train_one_transformer(model, lr=1e-3, epochs=10, batch_size=64):
+    #         model.to(device)
+    #         criterion = nn.BCEWithLogitsLoss()
+    #         optimizer = optim.Adam(model.parameters(), lr=lr)
 
-            dataset = TensorDataset(X_train_t, y_train_t)
-            loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    #         dataset = TensorDataset(X_train_t, y_train_t)
+    #         loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
-            model.train()
-            for _ in range(epochs):
-                for xb, yb in loader:
-                    optimizer.zero_grad()
-                    logits = model(xb)
-                    loss = criterion(logits, yb)
-                    loss.backward()
-                    optimizer.step()
+    #         model.train()
+    #         for _ in range(epochs):
+    #             for xb, yb in loader:
+    #                 optimizer.zero_grad()
+    #                 logits = model(xb)
+    #                 loss = criterion(logits, yb)
+    #                 loss.backward()
+    #                 optimizer.step()
 
-        def evaluate_transformer(model):
-            model.eval()
-            with torch.no_grad():
-                logits = model(X_test_t)
-                proba = torch.sigmoid(logits).cpu().numpy()
+    #     def evaluate_transformer(model):
+    #         model.eval()
+    #         with torch.no_grad():
+    #             logits = model(X_test_t)
+    #             proba = torch.sigmoid(logits).cpu().numpy()
 
-            # use sequence labels and returns for backtest
-            stats = backtest_with_threshold(
-                y_true=y_test_seq,
-                proba=proba,
-                returns=ret_test_seq,
-                threshold=TRADE_THRESHOLD,
-            )
-            return stats, proba
+    #         # use sequence labels and returns for backtest
+    #         stats = backtest_with_threshold(
+    #             y_true=y_test_seq,
+    #             proba=proba,
+    #             returns=ret_test_seq,
+    #             threshold=TRADE_THRESHOLD,
+    #         )
+    #         return stats, proba
 
-        # 3) Hyperparameter search for the Transformer
-        tf_param_grid = [
-            {"d_model": 64,  "num_layers": 2, "lr": 1e-3},
-            {"d_model": 128, "num_layers": 2, "lr": 1e-3},
-            {"d_model": 64,  "num_layers": 3, "lr": 5e-4},
-        ]
+    #     # 3) Hyperparameter search for the Transformer
+    #     tf_param_grid = [
+    #         {"d_model": 64,  "num_layers": 2, "lr": 1e-3},
+    #         {"d_model": 128, "num_layers": 2, "lr": 1e-3},
+    #         {"d_model": 64,  "num_layers": 3, "lr": 5e-4},
+    #     ]
 
-        best_tf_score = -np.inf
-        best_tf_params = None
-        best_tf_stats = None
-        best_tf_model = None
-        best_tf_proba = None
+    #     best_tf_score = -np.inf
+    #     best_tf_params = None
+    #     best_tf_stats = None
+    #     best_tf_model = None
+    #     best_tf_proba = None
 
-        for params in tf_param_grid:
-            model_tf = SimpleTransformerClassifier(
-                num_features=num_features,
-                d_model=params["d_model"],
-                num_layers=params["num_layers"],
-                nhead=4,
-                dim_feedforward=128,
-                dropout=0.1,
-            )
+    #     for params in tf_param_grid:
+    #         model_tf = SimpleTransformerClassifier(
+    #             num_features=num_features,
+    #             d_model=params["d_model"],
+    #             num_layers=params["num_layers"],
+    #             nhead=4,
+    #             dim_feedforward=128,
+    #             dropout=0.1,
+    #         )
 
-            train_one_transformer(
-                model_tf,
-                lr=params["lr"],
-                epochs=10,
-                batch_size=64,
-            )
+    #         train_one_transformer(
+    #             model_tf,
+    #             lr=params["lr"],
+    #             epochs=10,
+    #             batch_size=64,
+    #         )
 
-            stats, proba = evaluate_transformer(model_tf)
+    #         stats, proba = evaluate_transformer(model_tf)
 
-            acc = stats["accuracy"]
-            num_trades = stats["num_trades"]
-            win_rate = stats["win_rate"]
-            total_ret = stats["total_return"]
-            avg_ret = stats["avg_return"]
+    #         acc = stats["accuracy"]
+    #         num_trades = stats["num_trades"]
+    #         win_rate = stats["win_rate"]
+    #         total_ret = stats["total_return"]
+    #         avg_ret = stats["avg_return"]
 
-            print(
-                f"Transformer Params {params} → "
-                f"Acc: {acc:.3f}, Trades: {num_trades}, "
-                f"Win: {win_rate:.3f}, TotRet: {total_ret:.3f}, AvgRet: {avg_ret:.4f}"
-            )
+    #         print(
+    #             f"Transformer Params {params} → "
+    #             f"Acc: {acc:.3f}, Trades: {num_trades}, "
+    #             f"Win: {win_rate:.3f}, TotRet: {total_ret:.3f}, AvgRet: {avg_ret:.4f}"
+    #         )
 
-            if num_trades >= MIN_TRADES_FOR_MODEL and total_ret > best_tf_score:
-                best_tf_score = total_ret
-                best_tf_params = params
-                best_tf_stats = stats
-                best_tf_model = model_tf
-                best_tf_proba = proba
+    #         if num_trades >= MIN_TRADES_FOR_MODEL and total_ret > best_tf_score:
+    #             best_tf_score = total_ret
+    #             best_tf_params = params
+    #             best_tf_stats = stats
+    #             best_tf_model = model_tf
+    #             best_tf_proba = proba
 
-        print("\n=== Best Transformer config (by total_return at "
-              f"threshold {TRADE_THRESHOLD:.2f}) ===")
-        print("Best Transformer params:", best_tf_params)
-        print("Best Transformer stats:", best_tf_stats)
+    #     print("\n=== Best Transformer config (by total_return at "
+    #           f"threshold {TRADE_THRESHOLD:.2f}) ===")
+    #     print("Best Transformer params:", best_tf_params)
+    #     print("Best Transformer stats:", best_tf_stats)
 
-        # Final classification metrics for the best Transformer
-        if best_tf_model is not None:
-            best_tf_model.eval()
-            with torch.no_grad():
-                logits = best_tf_model(X_test_t)
-                proba = torch.sigmoid(logits).cpu().numpy()
+    #     # Final classification metrics for the best Transformer
+    #     if best_tf_model is not None:
+    #         best_tf_model.eval()
+    #         with torch.no_grad():
+    #             logits = best_tf_model(X_test_t)
+    #             proba = torch.sigmoid(logits).cpu().numpy()
 
-            y_pred_labels = (proba >= 0.5).astype(int)
+    #         y_pred_labels = (proba >= 0.5).astype(int)
 
-            print("\n=== Transformer (tuned by P&L, 30-day window) ===")
-            print("Accuracy:", accuracy_score(y_test_seq, y_pred_labels))
-            print("\nClassification Report:")
-            print(classification_report(y_test_seq, y_pred_labels))
-            print("Confusion Matrix:")
-            print(confusion_matrix(y_test_seq, y_pred_labels))
-    else:
-        print("\nPyTorch not installed; skipping Transformer model.")
+    #         print("\n=== Transformer (tuned by P&L, 30-day window) ===")
+    #         print("Accuracy:", accuracy_score(y_test_seq, y_pred_labels))
+    #         print("\nClassification Report:")
+    #         print(classification_report(y_test_seq, y_pred_labels))
+    #         print("Confusion Matrix:")
+    #         print(confusion_matrix(y_test_seq, y_pred_labels))
+    # else:
+    #     print("\nPyTorch not installed; skipping Transformer model.")
 
 
+    # Save artifacts for inference
+    artifact_dir = os.path.join(os.path.dirname(__file__), "artifacts")
+    os.makedirs(artifact_dir, exist_ok=True)
+
+    dump(scaler,   os.path.join(artifact_dir, "scaler.joblib"))
+    dump(lr_model, os.path.join(artifact_dir, "lr_model.joblib"))
+
+    if xgb_clf is not None:
+        dump(xgb_clf, os.path.join(artifact_dir, "xgb_model.joblib"))
+
+    if lgb_clf is not None:
+        dump(lgb_clf, os.path.join(artifact_dir, "lgb_model.joblib"))
+
+    if mlp_clf is not None:
+        dump(mlp_clf, os.path.join(artifact_dir, "mlp_model.joblib"))
+
+    print(f"\nArtifacts saved to: {artifact_dir}")
 
     print("\nDone.")
-
 
 if __name__ == "__main__":
     main()
