@@ -107,7 +107,12 @@ def add_target(df: pd.DataFrame, threshold: float = 0.0, horizon: int = 1,) -> p
 
 
 
-def build_dataset(df: pd.DataFrame, threshold: float = 0.002, horizon: int = 1) -> tuple[pd.DataFrame, pd.Series, list[str], pd.Series]:
+def build_dataset(
+    df: pd.DataFrame,
+    threshold: float = 0.002,
+    horizon: int = 1,
+    drop_future_nan: bool = True,
+) -> tuple[pd.DataFrame, pd.Series, list[str], pd.Series]:
     """
     Build the ML dataset from raw price data.
 
@@ -154,8 +159,16 @@ def build_dataset(df: pd.DataFrame, threshold: float = 0.002, horizon: int = 1) 
     y = df["Target"]
     future_ret = df["Future_Return"]
 
-    # Drop rows with any NaNs (from rolling windows, shift, etc.)
-    data = pd.concat([X, y, future_ret], axis=1).dropna()
+    data = pd.concat([X, y, future_ret], axis=1)
+
+    if drop_future_nan:
+        # Training: require future_return/target present so we have labels.
+        data = data.dropna()
+    else:
+        # Inference: keep the latest row even if target/future_return are NaN,
+        # but drop rows where features themselves are invalid.
+        data = data.dropna(subset=feature_cols)
+
     X = data[feature_cols]
     y = data["Target"]
     future_ret = data["Future_Return"]
