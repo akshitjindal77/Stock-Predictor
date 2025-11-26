@@ -1,0 +1,553 @@
+/* src/App.css */
+
+/* Layout */
+
+html,
+body {
+  margin: 0;
+  background: radial-gradient(circle at 20% 20%, #10192f, #060a16 45%, #040712);
+}
+
+.app-root {
+  min-height: 100vh;
+  padding: 2.5rem 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #e8eef8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+}
+
+.app-header {
+  text-align: center;
+}
+
+.app-title {
+  font-size: 2.3rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+  color: #f5f7fb;
+}
+
+.app-subtitle {
+  font-size: 0.95rem;
+  color: #c9d1e2;
+}
+
+/* Main layout:
+   - Default: single column, centered.
+   - With result: two columns, form moves left, result on right.
+*/
+
+.app-main {
+  width: 100%;
+  max-width: 1100px;
+  margin: 2.25rem auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  transition: all 0.25s ease;
+}
+
+.app-main.has-result {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+/* Cards */
+
+.card {
+  background: radial-gradient(circle at top left, #111827, #020617);
+  color: #e8eef8;
+  border-radius: 1.5rem;
+  padding: 1.75rem 1.75rem 1.5rem;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(148, 163, 184, 0.15);
+  backdrop-filter: blur(16px);
+  width: 100%;
+  max-width: 520px;
+}
+
+.app-main.has-result .form-card {
+  max-width: 420px;
+}
+
+.app-main.has-result .result-card {
+  max-width: 620px;
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: #f2f4f8;
+}
+
+/* Form */
+
+.prediction-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-row.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+label {
+  font-size: 0.85rem;
+  color: #d8deeb;
+}
+
+.input {
+  margin-top: 0.15rem;
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.input::placeholder {
+  color: #6b7280;
+}
+
+.input:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+/* Example tickers */
+
+.example-tickers {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.example-label {
+  margin-right: 0.25rem;
+}
+
+.chip {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 0.32rem 0.7rem;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.chip:hover {
+  background: rgba(34, 197, 94, 0.07);
+  border-color: rgba(34, 197, 94, 0.7);
+  transform: translateY(-1px);
+}
+
+/* Button */
+
+.btn-primary {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #ecfdf5;
+  background: radial-gradient(circle at top left, #22c55e, #16a34a);
+  box-shadow:
+    0 10px 30px rgba(22, 163, 74, 0.7),
+    0 0 0 1px rgba(34, 197, 94, 0.3);
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow:
+    0 14px 32px rgba(22, 163, 74, 0.85),
+    0 0 0 1px rgba(34, 197, 94, 0.45);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Error */
+
+.error-text {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #f97373;
+}
+
+/* Result card */
+
+.result-card {
+  font-size: 0.9rem;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.result-ticker {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+.signal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.signal-chip {
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.signal-bullish {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.signal-neutral {
+  background: rgba(234, 179, 8, 0.08);
+  color: #fbbf24;
+  border-color: rgba(234, 179, 8, 0.45);
+}
+
+.signal-bearish {
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.confidence-label {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.prediction-dates {
+  text-align: right;
+  font-size: 0.82rem;
+  color: #c3cad7;
+}
+
+.date-label + .date-label {
+  margin-top: 0.15rem;
+}
+
+/* Trade recommendation */
+
+.trade-recommendation {
+  margin-top: 0.5rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.85rem;
+  color: #dfe5f2;
+}
+
+/* Probabilities */
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.1rem;
+}
+
+.prob-card {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 1rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+.prob-card h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.prob-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Confidence meter */
+
+.confidence-meter-section {
+  margin-bottom: 1.3rem;
+}
+
+.confidence-meter-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-bottom: 0.35rem;
+}
+
+.confidence-meter {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  overflow: hidden;
+}
+
+.confidence-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.25s ease;
+}
+
+.confidence-low {
+  background: linear-gradient(90deg, #a3e635, #facc15);
+}
+
+.confidence-medium {
+  background: linear-gradient(90deg, #22c55e, #f97316);
+}
+
+.confidence-high {
+  background: linear-gradient(90deg, #16a34a, #dc2626);
+}
+
+.confidence-hint {
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* History / charts */
+
+.history-section {
+  margin-top: 0.4rem;
+}
+
+.history-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.55rem;
+}
+
+.history-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  height: 140px;
+  padding: 0.35rem 0.2rem 0.1rem;
+  border-radius: 0.9rem;
+  background: radial-gradient(circle at top, #020617, #020617);
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  margin-bottom: 0.7rem;
+}
+
+.history-bar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end; 
+  height: 100%; 
+}
+
+.history-bar {
+  width: 100%;
+  border-radius: 0.6rem 0.6rem 0.2rem 0.2rem;
+  background: #22c55e;
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.6);
+}
+
+.history-bar.bullish {
+  background: linear-gradient(to top, #16a34a, #4ade80);
+}
+
+.history-bar.bearish {
+  background: linear-gradient(to top, #dc2626, #fb7185);
+}
+
+.history-bar-date {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+/* History metrics */
+
+.history-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.metric-label {
+  font-size: 0.78rem;
+  color: #c3cad7;
+  margin-bottom: 0.3rem;
+}
+
+.sentiment-card,
+.accuracy-card {
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+}
+
+.sentiment-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  display: flex;
+}
+
+.sentiment-segment {
+  height: 100%;
+}
+
+.sentiment-segment.bullish {
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+}
+
+.sentiment-segment.bearish {
+  background: linear-gradient(90deg, #ef4444, #fb7185);
+}
+
+.sentiment-caption {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* Accuracy meter */
+
+.accuracy-meter {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(31, 41, 55, 0.9);
+}
+
+.accuracy-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #14b8a6);
+}
+
+.accuracy-caption {
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* Feature details */
+
+.feature-details {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: #c3cad7;
+}
+
+.feature-details summary {
+  cursor: pointer;
+}
+
+.feature-list {
+  margin-top: 0.6rem;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.74rem;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 0.6rem;
+  padding: 0.6rem;
+}
+
+/* Footer */
+
+.app-footer {
+  margin-top: 2rem;
+  font-size: 0.78rem;
+  color: #9aa3b8;
+  text-align: center;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .app-main.has-result {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .card {
+    max-width: 100%;
+  }
+
+  .result-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .prediction-dates {
+    text-align: left;
+  }
+
+  .history-metrics {
+    grid-template-columns: 1fr;
+  }
+}
