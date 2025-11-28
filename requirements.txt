@@ -1,0 +1,22 @@
+# --- Core Python Dependencies ---
+numpy
+pandas
+scikit-learn
+
+# --- Gradient Boosting Models ---
+xgboost
+lightgbm
+
+# --- API & Server ---
+fastapi
+uvicorn[standard]
+pydantic
+
+# --- Market Data ---
+yfinance
+
+# --- Utilities ---
+python-dotenv
+
+# --- Optional but recommended ---
+matplotlib
