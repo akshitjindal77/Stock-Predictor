@@ -46,7 +46,7 @@ python -m venv venv
 venv\Scripts\activate           # Windows
 # source venv/bin/activate      # macOS/Linux
 pip install -r requirements.txt
-uvicorn app:app --reload
+uvicorn backend.app:app --reload --port 8000
 ```
 API runs at `http://127.0.0.1:8000`.
 
@@ -142,6 +142,33 @@ Ensemble averages probabilities for stability: `P(up) = mean(model_probs)`, `P(d
 | TSLA   | ~53%     | High volatility, noisier labels |
 
 Re-run training on your data range to refresh these numbers.
+
+## Model Performance (Test Set, 2020–2025 Time Split)
+
+The models were trained on an 80% time-based training window and evaluated on the most recent 20% of the data (multi-ticker: AAPL, MSFT, GOOGL, AMZN, TSLA).
+
+### Individual Models (0.5 probability cutoff)
+
+| Model                | Accuracy | Notes                                  |
+|----------------------|----------|----------------------------------------|
+| Logistic Regression  | 0.546    | Strong linear baseline                 |
+| Random Forest        | 0.537    | Non-linear, similar overall accuracy   |
+| XGBoost (tuned)      | 0.519    | Tuned for P&L, good when selective     |
+| LightGBM (tuned)     | 0.524    | Best single model overall              |
+| MLP Neural Network   | 0.507    | Adds diversity to the ensemble         |
+| Ensemble (all four)  | 0.516    | Probability-average, 0.5 cutoff        |
+
+### Ensemble Backtest (trading only when P(up) > 0.60)
+
+| Metric           | Value  |
+|------------------|--------|
+| Accuracy         | 0.539  |
+| Number of trades | 203    |
+| Win rate         | 0.562  |
+| Total return     | 1.042  |
+| Avg return/trade | 0.0051 |
+
+This shows that while raw classification accuracy is only modestly above 50%, the ensemble exhibits a small but positive edge when used as a selective trading signal.
 
 ## Future Improvements
 - Business-day awareness and calendar adjustments.
