@@ -177,5 +177,12 @@ This shows that while raw classification accuracy is only modestly above 50%, th
 - Deployment with CI/CD and caching/rate limiting.
 - Add LSTM/Transformer variants for sequence modeling.
 
+## License
+MIT License © 2025 Akshit Jindal. You may freely use, modify, and distribute this project for non-commercial or educational purposes.
+
+## Credits
+- Developed by Akshit Jindal  
+- Powered by FastAPI, scikit-learn, XGBoost, LightGBM, and React (Vite)
+
 ## Disclaimer
 This project is for educational purposes only. It is not financial advice and should not be used for real trading decisions. Use at your own risk.
