@@ -551,3 +551,35 @@ label {
     grid-template-columns: 1fr;
   }
 }
+
+.horizon-tabs {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.horizon-chip {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #555;
+  background: transparent;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.horizon-chip-active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.metadata-row {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #cbd5f5;
+}
+
+.meta-line + .meta-line {
+  margin-top: 0.25rem;
+}
