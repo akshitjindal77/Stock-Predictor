@@ -1,6 +1,6 @@
 // src/App.jsx
 import { useState } from "react";
-import { fetchPrediction, EXAMPLE_TICKERS } from "./api/predictions";
+import { fetchPrediction, fetchMetadata,EXAMPLE_TICKERS } from "./api/predictions";
 import "./App.css";
 
 function formatPercent(value) {
@@ -60,11 +60,13 @@ function getConfidenceInfo(p_up) {
 
 function App() {
   const [ticker, setTicker] = useState("AAPL");
-  const [start, setStart] = useState("2010-01-01");
+  const [start, setStart] = useState("2020-01-01");
   const [end, setEnd] = useState("");
+  const [horizon, setHorizon] = useState(1);  
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [meta, setMeta] = useState(null);
 
   const hasPrediction = !!result;
   const history = result?.history ?? [];
@@ -98,9 +100,17 @@ function App() {
       const data = await fetchPrediction(
         trimmedTicker,
         start || undefined,
-        end || undefined
+        end || undefined,
+        horizon            
       );
       setResult(data);
+    try {
+      const md = await fetchMetadata(trimmedTicker);
+        setMeta(md);
+    } catch (metaErr) {
+        console.warn("Failed to fetch metadata", metaErr);
+        setMeta(null);
+      } 
     } catch (err) {
       console.error(err);
       if (err.response) {
@@ -114,6 +124,7 @@ function App() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="app-root">
@@ -168,6 +179,25 @@ function App() {
                   onChange={(e) => setEnd(e.target.value)}
                 />
               </label>
+            </div>
+
+            <div className="form-row">
+              <span className="example-label">Horizon:</span>
+              <div className="horizon-tabs">
+                {[1, 3, 5].map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    className={
+                      "chip horizon-chip" +
+                      (horizon === h ? " horizon-chip-active" : "")
+                    }
+                    onClick={() => setHorizon(h)}
+                  >
+                    {h} day{h > 1 ? "s" : ""}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="example-tickers">
@@ -230,6 +260,21 @@ function App() {
                   </p>
                 )}
               </div>
+              {meta && (
+                  <div className="metadata-row">
+                    <p className="meta-line">
+                      {meta.longName && <strong>{meta.longName}</strong>}{" "}
+                      {meta.sector && <>({meta.sector})</>}
+                    </p>
+                    <p className="meta-line">
+                      {meta.marketCap && (
+                        <>Mkt cap: {Math.round(meta.marketCap / 1e9)}B </>
+                      )}
+                      {meta.trailingPE && <> · P/E: {meta.trailingPE.toFixed(1)}</>}
+                      {meta.currency && <> · Currency: {meta.currency}</>}
+                    </p>
+                  </div>
+                )}
             </div>
 
             {/* Trade recommendation card */}
