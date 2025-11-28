@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 class PredictRequest(BaseModel):
     ticker: str = Field(..., description="Stock ticker symbol, e.g. AAPL, MSFT")
@@ -22,6 +22,7 @@ class PredictRequest(BaseModel):
 class PredictResponse(BaseModel):
     ticker: str
     as_of: str
+    prediction_for: Optional[str] = None 
     start: str
     end: str
     p_up: float
@@ -29,3 +30,17 @@ class PredictResponse(BaseModel):
     signal: str
     config: Dict[str, Any]
     meta: Dict[str, Any]
+    history: Optional[List[Dict[str, Any]]] = None  
+    metrics: Optional[Dict[str, Any]] = None
+
+
+class TickerMetadata(BaseModel):
+    ticker: str
+    longName: Optional[str] = None
+    sector: Optional[str] = None
+    marketCap: Optional[float] = None
+    trailingPE: Optional[float] = None
+    dividendYield: Optional[float] = None
+    fiftyTwoWeekHigh: Optional[float] = None
+    fiftyTwoWeekLow: Optional[float] = None
+    currency: Optional[str] = None
