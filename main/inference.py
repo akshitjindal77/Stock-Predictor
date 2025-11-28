@@ -12,12 +12,6 @@ from .train import ensemble_predict_proba, TRADE_THRESHOLD
 
 ARTIFACT_DIR = os.path.join(os.path.dirname(__file__), "artifacts")
 
-SCALER_PATH   = os.path.join(ARTIFACT_DIR, "scaler.joblib")
-LR_PATH       = os.path.join(ARTIFACT_DIR, "lr_model.joblib")
-XGB_PATH      = os.path.join(ARTIFACT_DIR, "xgb_model.joblib")
-LGB_PATH      = os.path.join(ARTIFACT_DIR, "lgb_model.joblib")
-MLP_PATH      = os.path.join(ARTIFACT_DIR, "mlp_model.joblib")
-
 DEFAULT_THRESHOLD = 0.002
 DEFAULT_HORIZON = 1
 DEFAULT_START = "2020-01-01"
@@ -25,7 +19,7 @@ DEFAULT_START = "2020-01-01"
 
 class ModelArtifacts:
     """
-    Simple container for all loaded models + scaler.
+    Simple container for all loaded models + scaler for a given horizon.
     """
 
     def __init__(self, scaler, lr_model, xgb_model, lgb_model, mlp_model):
@@ -36,30 +30,61 @@ class ModelArtifacts:
         self.mlp_model = mlp_model
 
 
-def load_artifacts() -> ModelArtifacts:
+# Simple in-memory cache so we only load each horizon once
+_ARTIFACT_CACHE: dict[int, ModelArtifacts] = {}
+
+
+def _artifact_path(name: str, horizon: int) -> str:
     """
-    Load scaler + models from disk.
-    Make sure train.py has saved them to main/artifacts/ first.
+    Helper to build artifact filename like:
+    scaler_h1.joblib, lr_model_h3.joblib, etc.
     """
+    suffix = f"_h{horizon}"
+    return os.path.join(ARTIFACT_DIR, f"{name}{suffix}.joblib")
+
+
+def load_artifacts_for_horizon(horizon: int) -> ModelArtifacts:
+    """
+    Load scaler + models from disk for a specific horizon and cache them.
+    """
+    if horizon in _ARTIFACT_CACHE:
+        return _ARTIFACT_CACHE[horizon]
+
     if not os.path.isdir(ARTIFACT_DIR):
         raise FileNotFoundError(
             f"Artifact directory not found: {ARTIFACT_DIR}. "
             "Did you run training and save the models?"
         )
 
-    scaler = load(SCALER_PATH)
-    lr_model = load(LR_PATH)
-    xgb_model = load(XGB_PATH)
-    lgb_model = load(LGB_PATH)
-    mlp_model = load(MLP_PATH)
+    scaler_path = _artifact_path("scaler", horizon)
+    lr_path = _artifact_path("lr_model", horizon)
+    xgb_path = _artifact_path("xgb_model", horizon)
+    lgb_path = _artifact_path("lgb_model", horizon)
+    mlp_path = _artifact_path("mlp_model", horizon)
 
-    return ModelArtifacts(
+    if not os.path.exists(scaler_path) or not os.path.exists(lr_path):
+        raise FileNotFoundError(
+            f"Artifacts for horizon={horizon} not found. "
+            f"Expected at least {os.path.basename(scaler_path)} and "
+            f"{os.path.basename(lr_path)}. Run training for this horizon first."
+        )
+
+    scaler = load(scaler_path)
+    lr_model = load(lr_path)
+    xgb_model = load(xgb_path) if os.path.exists(xgb_path) else None
+    lgb_model = load(lgb_path) if os.path.exists(lgb_path) else None
+    mlp_model = load(mlp_path) if os.path.exists(mlp_path) else None
+
+    artifacts = ModelArtifacts(
         scaler=scaler,
         lr_model=lr_model,
         xgb_model=xgb_model,
         lgb_model=lgb_model,
         mlp_model=mlp_model,
     )
+
+    _ARTIFACT_CACHE[horizon] = artifacts
+    return artifacts
 
 
 def _signal_from_proba(p_up: float) -> str:
@@ -88,20 +113,19 @@ def predict_next_day_ensemble_api(
     """
     High-level inference function for your backend.
 
-    - Loads trained models + scaler
+    - Loads trained models + scaler for the requested horizon
     - Downloads fresh data for `ticker`
     - Rebuilds features (same pipeline as training)
     - Uses 4-model ensemble to get P(up)
     - Also computes a 7-day rolling history of predictions vs. actual labels
     - Returns a JSON-friendly dictionary for your API/React UI.
     """
-
     if end is None:
         # yfinance end date is exclusive; bump by 1 day to include today's bar
         end = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 
-    # 1) Load models
-    artifacts = load_artifacts()
+    # 1) Load models for this horizon
+    artifacts = load_artifacts_for_horizon(horizon)
 
     # 2) Get price data
     df = download_stock_data(ticker, start, end)
@@ -125,9 +149,9 @@ def predict_next_day_ensemble_api(
     latest_features = X_t.iloc[[-1]]  # shape: (1, n_features)
     latest_date = latest_features.index[-1]
 
-    # Prediction day = "next" day after the last feature row
+    # Prediction day = "next" horizon-th day after the last feature row
     try:
-        base_date = latest_date.date()  # pandas.Timestamp
+        base_date = latest_date.date()
     except AttributeError:
         # Fallback if it's already a date/str
         if isinstance(latest_date, datetime.date):
@@ -135,9 +159,9 @@ def predict_next_day_ensemble_api(
         else:
             base_date = datetime.datetime.strptime(str(latest_date), "%Y-%m-%d").date()
 
-    prediction_for = (base_date + datetime.timedelta(days=1)).isoformat()
+    prediction_for = (base_date + datetime.timedelta(days=horizon)).isoformat()
 
-    # 5) Ensemble probability for the next day (main prediction)
+    # 5) Ensemble probability for this horizon
     proba_up_arr = ensemble_predict_proba(
         latest_features,
         lr_model=artifacts.lr_model,
@@ -176,8 +200,8 @@ def predict_next_day_ensemble_api(
         )
         p_down_hist = float(1.0 - p_up_hist)
 
-        actual_label = int(labeled_y.loc[idx])      # 1 = up, 0 = down
-        pred_label = int(p_up_hist >= 0.5)    # simple 0.5 cutoff
+        actual_label = int(labeled_y.loc[idx])   # 1 = up, 0 = down
+        pred_label = int(p_up_hist >= 0.5)       # simple 0.5 cutoff
 
         if pred_label == actual_label:
             correct += 1
@@ -231,7 +255,6 @@ def predict_next_day_ensemble_api(
             "bearish_days": bearish_days,
         },
     }
-
 
 
 if __name__ == "__main__":
